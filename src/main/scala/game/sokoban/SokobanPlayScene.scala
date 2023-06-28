@@ -59,50 +59,42 @@ class SokobanPlayScene(dim : CPDim) extends CPScene("play", dim.?, BG_PX):
       canv.fillRect(0, 0, canv.w, scoreH - 1, 1, (_, _) => scorePx)
 
   private val levelSpr = new CPCanvasSprite :
-    override def render(ctx: CPSceneObjectContext): Unit =
-      for (i <- 0 until gameBoardRows; j <- 0 until gameBoardCols)
-        gameBoard(i)(j) match
-          case '#' => drawOneField((j + xOffset, i + yOffset), borderPx, ctx)
-          case '.' => drawOneField((j + xOffset, i + yOffset), finalBoxPositionPx, ctx)
-          case _ => ()
-
-  private val playerSpr: CPCanvasSprite = new CPCanvasSprite:
-    private var x = 0
-    private var y = 0
-
-    override def onActivate(): Unit =
-      // Reset player sprite on each scene activation
-      this.x = 5
-      this.y = 6
-
-    def move(x: Int, y:Int): Unit =
-      this.x = x
-      this.y = y
-
     override def update(ctx: CPSceneObjectContext): Unit =
       super.update(ctx)
       ctx.getKbEvent match
         case Some(evt) =>
           evt.key match
-            case KEY_LO_W | KEY_UP => move(x, y - 1)
-            case KEY_LO_S | KEY_DOWN => move(x, y + 1)
-            case KEY_LO_A | KEY_LEFT => move(x - 1, y)
-            case KEY_LO_D | KEY_RIGHT => move(x + 1, y)
+            case KEY_LO_W | KEY_UP => gameBoard = MovePlayerUp(gameBoard).move(); printGameBoard();// make it as command and execute below
+            case KEY_LO_S | KEY_DOWN => gameBoard = MovePlayerDown(gameBoard).move(); printGameBoard();
+            case KEY_LO_A | KEY_LEFT => gameBoard = MovePlayerLeft(gameBoard).move(); printGameBoard();
+            case KEY_LO_D | KEY_RIGHT => gameBoard = MovePlayerRight(gameBoard).move(); printGameBoard();
             case _ => ()
         case None => ()
 
     override def render(ctx: CPSceneObjectContext): Unit =
-      // Draw player
-      drawOneField((x,y), playerPx.withChar('*').withFg(C_BLACK), ctx)
+      for (i <- 0 until gameBoardRows; j <- 0 until gameBoardCols)
+        gameBoard(i)(j) match
+          case '#' => drawOneField((j + xOffset, i + yOffset), borderPx, ctx)
+          case '.' => drawOneField((j + xOffset, i + yOffset), finalBoxPositionPx, ctx)
+          case 'S' => drawOneField((j + xOffset,i + yOffset), playerPx.withChar('*').withFg(C_BLACK), ctx)
+          case _ => ()
 
-  def loadLevel(): Unit =
+  private def loadLevel(): Unit =
     using(io.Source.fromFile("src/main/resources/lvl1.txt")){ source =>
       val lines: List[String] = source.getLines().toList
       gameBoard = lines.map(_.toCharArray).toArray
       gameBoardRows = gameBoard.size
       gameBoardCols = gameBoard(0).size //handle empty file
       // calculate proper x,y offset
+      printGameBoard()
     }
+
+  private def printGameBoard() : Unit =
+    for (i <- 0 until gameBoardRows)
+      for(j <-0 until gameBoardCols)
+        print(gameBoard(i)(j))
+      println()
+
 
   override def onActivate(): Unit =
     super.onActivate()
@@ -115,7 +107,6 @@ class SokobanPlayScene(dim : CPDim) extends CPScene("play", dim.?, BG_PX):
     CPKeyboardSprite(KEY_LO_Q, _.exitGame()),
     scoreSpr,
     borderSpr,
-    levelSpr,
-    playerSpr
+    levelSpr
   )
 end SokobanPlayScene

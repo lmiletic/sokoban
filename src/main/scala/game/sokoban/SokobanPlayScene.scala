@@ -27,14 +27,20 @@ class SokobanPlayScene(dim : CPDim) extends CPScene("play", dim.?, BG_PX):
   private var gameBoardCols = 0
   private val DARK_RED = CPColor("0x0903749")
   private val DARK_BLUE = CPColor("0x02B2E4A")
+  private val DUSICA_ROSE = CPColor("0x0FFCFDF")
+  private val SKY_BLUE = CPColor("0x05A96E3")
 
+  // should be calculated
   private var xOffset = 15
   private var yOffset = 15
 
   private val borderPx = ' '&&(DARK_RED, DARK_RED)
   private val finalBoxPositionPx = ' '&&(C_YELLOW, C_YELLOW)
   private val scorePx = ' '&&(DARK_BLUE, DARK_BLUE)
-  private val playerPx = ' '&&(DARK_RED, DARK_RED)
+  private val boxPx = ' ' &&(SKY_BLUE, SKY_BLUE)
+  private val playerPx = ' '&&(DUSICA_ROSE, DUSICA_ROSE)
+
+  private val moveHistory = MoveHistory()
   private def mkScoreImage: CPImage = FIG_ANSI_REGULAR.render(s"SCORE : $score", C3).trimBg()
 
   private val scoreSpr = new CPImageSprite(x = 0, y = 0, z = 1, img = mkScoreImage) :
@@ -48,6 +54,15 @@ class SokobanPlayScene(dim : CPDim) extends CPScene("play", dim.?, BG_PX):
     canv.drawPixel(px, xy._1 * 2, xy._2, 2)
     canv.drawPixel(px, xy._1 * 2 + 1, xy._2, 2)
 
+  private def movePlayer(command : MovePlayer) =
+    command.move()
+    moveHistory.push(command)
+
+  private def undo() =
+    var command = moveHistory.pop()
+    if (command != null)
+      command.undoMove()
+
   private val borderSpr = new CPCanvasSprite :
     override def render(ctx: CPSceneObjectContext): Unit =
       val canv = ctx.getCanvas
@@ -58,16 +73,18 @@ class SokobanPlayScene(dim : CPDim) extends CPScene("play", dim.?, BG_PX):
       // Draw score rectangle fill
       canv.fillRect(0, 0, canv.w, scoreH - 1, 1, (_, _) => scorePx)
 
-  private val levelSpr = new CPCanvasSprite :
+  private val gameSpr = new CPCanvasSprite :
     override def update(ctx: CPSceneObjectContext): Unit =
       super.update(ctx)
+      var command : MovePlayer = null
       ctx.getKbEvent match
         case Some(evt) =>
           evt.key match
-            case KEY_LO_W | KEY_UP => gameBoard = MovePlayerUp(gameBoard).move(); printGameBoard();// make it as command and execute below
-            case KEY_LO_S | KEY_DOWN => gameBoard = MovePlayerDown(gameBoard).move(); printGameBoard();
-            case KEY_LO_A | KEY_LEFT => gameBoard = MovePlayerLeft(gameBoard).move(); printGameBoard();
-            case KEY_LO_D | KEY_RIGHT => gameBoard = MovePlayerRight(gameBoard).move(); printGameBoard();
+            case KEY_LO_W | KEY_UP => movePlayer(MovePlayerUp(gameBoard)); printGameBoard();
+            case KEY_LO_S | KEY_DOWN => movePlayer(MovePlayerDown(gameBoard)); printGameBoard();
+            case KEY_LO_A | KEY_LEFT => movePlayer(MovePlayerLeft(gameBoard)); printGameBoard();
+            case KEY_LO_D | KEY_RIGHT => movePlayer(MovePlayerRight(gameBoard)); printGameBoard();
+            case KEY_CTRL_Z => undo()
             case _ => ()
         case None => ()
 
@@ -76,7 +93,8 @@ class SokobanPlayScene(dim : CPDim) extends CPScene("play", dim.?, BG_PX):
         gameBoard(i)(j) match
           case '#' => drawOneField((j + xOffset, i + yOffset), borderPx, ctx)
           case '.' => drawOneField((j + xOffset, i + yOffset), finalBoxPositionPx, ctx)
-          case 'S' => drawOneField((j + xOffset,i + yOffset), playerPx.withChar('*').withFg(C_BLACK), ctx)
+          case 'S' => drawOneField((j + xOffset,i + yOffset), playerPx, ctx)
+          case 'x' => drawOneField((j + xOffset, i + yOffset), boxPx, ctx)
           case _ => ()
 
   private def loadLevel(): Unit =
@@ -94,6 +112,7 @@ class SokobanPlayScene(dim : CPDim) extends CPScene("play", dim.?, BG_PX):
       for(j <-0 until gameBoardCols)
         print(gameBoard(i)(j))
       println()
+    println()
 
 
   override def onActivate(): Unit =
@@ -107,6 +126,6 @@ class SokobanPlayScene(dim : CPDim) extends CPScene("play", dim.?, BG_PX):
     CPKeyboardSprite(KEY_LO_Q, _.exitGame()),
     scoreSpr,
     borderSpr,
-    levelSpr
+    gameSpr
   )
 end SokobanPlayScene

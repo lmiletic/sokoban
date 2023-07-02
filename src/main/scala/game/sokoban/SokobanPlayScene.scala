@@ -21,7 +21,7 @@ class SokobanPlayScene(dim : CPDim) extends CPScene("play", dim.?, BG_PX):
   private val fadeInShdr = CPFadeInShader(entireFrame = true, 500, BG_PX)
   private val fadeOutShdr = CPFadeOutShader(entireFrame = true, 500, BG_PX)
 
-  private val score = 0
+  private var score = 0
   private var gameBoard: Array[Array[Char]] = _
   private var gameBoardRows = 0
   private var gameBoardCols = 0
@@ -84,10 +84,22 @@ class SokobanPlayScene(dim : CPDim) extends CPScene("play", dim.?, BG_PX):
       ctx.getKbEvent match
         case Some(evt) =>
           evt.key match
-            case KEY_LO_W | KEY_UP => movePlayer(MovePlayerUp(gameBoard, finalBoxLocations)); printGameBoard();
-            case KEY_LO_S | KEY_DOWN => movePlayer(MovePlayerDown(gameBoard, finalBoxLocations)); printGameBoard();
-            case KEY_LO_A | KEY_LEFT => movePlayer(MovePlayerLeft(gameBoard, finalBoxLocations)); printGameBoard();
-            case KEY_LO_D | KEY_RIGHT => movePlayer(MovePlayerRight(gameBoard, finalBoxLocations)); printGameBoard();
+            case KEY_LO_W | KEY_UP =>
+              movePlayer(MovePlayerUp(gameBoard, finalBoxLocations))
+              printGameBoard()
+              checkWin()
+            case KEY_LO_S | KEY_DOWN =>
+              movePlayer(MovePlayerDown(gameBoard, finalBoxLocations))
+              printGameBoard()
+              checkWin()
+            case KEY_LO_A | KEY_LEFT =>
+              movePlayer(MovePlayerLeft(gameBoard, finalBoxLocations))
+              printGameBoard()
+              checkWin()
+            case KEY_LO_D | KEY_RIGHT =>
+              movePlayer(MovePlayerRight(gameBoard, finalBoxLocations))
+              printGameBoard()
+              checkWin()
             case KEY_CTRL_Z => undo()
             case _ => ()
         case None => ()
@@ -103,7 +115,7 @@ class SokobanPlayScene(dim : CPDim) extends CPScene("play", dim.?, BG_PX):
           case _ => ()
 
   private def loadLevel(): Unit =
-    using(io.Source.fromFile("src/main/resources/lvl1.txt")){ source =>
+    using(io.Source.fromFile("src/main/resources/lvl2.txt")){ source =>
       val lines: List[String] = source.getLines().toList
       gameBoard = lines.map(_.toCharArray).toArray
       gameBoardRows = gameBoard.size
@@ -116,6 +128,14 @@ class SokobanPlayScene(dim : CPDim) extends CPScene("play", dim.?, BG_PX):
           case _ => ()
       printGameBoard()
     }
+
+  private def checkWin(): Unit =
+    var win = true
+    var winScore = 0
+    for(i <- 0 until finalBoxLocations.size)
+      if (gameBoard(finalBoxLocations(i)._2)(finalBoxLocations(i)._1) == 'O')
+        winScore = winScore + 1
+    score = winScore
 
   private def printGameBoard() : Unit =
     for (i <- 0 until gameBoardRows)

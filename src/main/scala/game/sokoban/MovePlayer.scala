@@ -2,15 +2,22 @@ package game.sokoban
 
 import scala.collection.mutable.Stack
 
-abstract class MovePlayer(val gameBoard: Array[Array[Char]]) {
+abstract class MovePlayer(val gameBoard : Array[Array[Char]], val finalBoxLocations : List[(Int, Int)]) {
 
-  protected val gameBoardRows = gameBoard.size
-  protected val gameBoardCols = gameBoard(0).size
+  private val gameBoardRows = gameBoard.size
+  private val gameBoardCols = gameBoard(0).size
 
-  protected var playerPosX = 0
-  protected var playerPosY = 0
-  protected var movedPlayer = false
-  //abstract protected var movedBoxPosition : Int
+  private var playerPosX = 0
+  private var playerPosY = 0
+
+  private var boxPosX = 0
+  private var boxPosY = 0
+
+  private var movedPlayer = false
+  private var movedBox = false
+
+  protected val moveX : Int
+  protected val moveY : Int
 
   // locating player
   for (i <- 0 until gameBoardRows; j <- 0 until gameBoardCols)
@@ -18,10 +25,55 @@ abstract class MovePlayer(val gameBoard: Array[Array[Char]]) {
       playerPosX = j
       playerPosY = i
 
-  def move() : Unit
-  def undoMove() : Unit
+  def move(): Unit =
+    println(gameBoard(playerPosY + moveY)(playerPosX + moveX))
+    if (inBounds(playerPosY + moveY, playerPosX + moveX))
+      gameBoard(playerPosY + moveY)(playerPosX + moveX) match
+        case '–' | '.' =>
+          movePlayer()
+        case 'x' | 'O' =>
+          boxPosX = playerPosX + moveX
+          boxPosY = playerPosY + moveY
+          moveBox()
+          if (movedBox)
+            movePlayer()
+        case _ => ()
 
-  protected def inBounds(row : Int, col : Int) : Boolean =
+  def isMoved() : Boolean =
+    movedPlayer
+
+  private def movePlayer(): Unit =
+    gameBoard(playerPosY)(playerPosX) = if (finalBoxLocations.exists((x,y) => x == playerPosX && y == playerPosY)) '.' else '–'
+    gameBoard(playerPosY + moveY)(playerPosX + moveX) = 'S'
+    movedPlayer = true
+
+  private def moveBox(): Unit =
+    if (inBounds(boxPosY + moveY, boxPosX + moveX))
+      gameBoard(boxPosY + moveY)(boxPosX + moveX) match
+        case '–' | '.' =>
+          if (gameBoard(boxPosY)(boxPosX) == 'O')
+            gameBoard(boxPosY)(boxPosX) = '.'
+          else
+            gameBoard(boxPosY)(boxPosX) = '–'
+          gameBoard(boxPosY + moveY)(boxPosX + moveX) = if (finalBoxLocations.exists((x,y) => x == boxPosX + moveX && y == boxPosY + moveY)) 'O' else 'x'
+          movedBox = true
+        case _ => ()
+
+  private def undoMoveBox(): Unit =
+    gameBoard(boxPosY)(boxPosX) = if (finalBoxLocations.exists((x,y) => x == boxPosX && y == boxPosY)) 'O' else 'x'
+    gameBoard(boxPosY + moveY)(boxPosX + moveX) = if (finalBoxLocations.exists((x,y) => x == boxPosX + moveX && y == boxPosY + moveY)) '.' else '–'
+
+  private def undoMovePlayer(): Unit =
+    gameBoard(playerPosY)(playerPosX) = 'S'
+    gameBoard(playerPosY + moveY)(playerPosX + moveX) = if (finalBoxLocations.exists((x,y) => x == playerPosX + moveX && y == playerPosY + moveY)) '.' else '–'
+
+  def undoMove(): Unit =
+    if (movedPlayer)
+      undoMovePlayer()
+    if (movedBox)
+      undoMoveBox()
+
+  private def inBounds(row : Int, col : Int) : Boolean =
     if (row >= 0 && row < gameBoardRows
         && col >= 0 && col < gameBoardCols)
       true
@@ -29,68 +81,24 @@ abstract class MovePlayer(val gameBoard: Array[Array[Char]]) {
       false
 }
 
-class MovePlayerLeft(gameBoard: Array[Array[Char]]) extends MovePlayer(gameBoard) {
-  def move(): Unit =
-    println(gameBoard(playerPosY)(playerPosX - 1))
-    if (inBounds(playerPosY, playerPosX - 1) && gameBoard(playerPosY)(playerPosX - 1) == '–')
-      gameBoard(playerPosY)(playerPosX) = '–'
-      gameBoard(playerPosY)(playerPosX - 1) = 'S'
-      movedPlayer = true
-    else
-      movedPlayer = false
-
-  def undoMove() : Unit =
-    if (movedPlayer)
-      gameBoard(playerPosY)(playerPosX) = 'S'
-      gameBoard(playerPosY)(playerPosX - 1) = '–'
+class MovePlayerLeft(gameBoard: Array[Array[Char]], finalBoxLocations: List[(Int, Int)]) extends MovePlayer(gameBoard, finalBoxLocations) {
+  override val moveX : Int = -1
+  override val moveY : Int = 0
 }
 
-class MovePlayerRight(gameBoard: Array[Array[Char]]) extends MovePlayer(gameBoard) {
-  def move(): Unit =
-    println(gameBoard(playerPosY)(playerPosX + 1))
-    if (inBounds(playerPosY, playerPosX + 1) && gameBoard(playerPosY)(playerPosX + 1) == '–')
-      gameBoard(playerPosY)(playerPosX) = '–'
-      gameBoard(playerPosY)(playerPosX + 1) = 'S'
-      movedPlayer = true
-    else
-      movedPlayer = false
-
-  def undoMove() : Unit =
-    if (movedPlayer)
-      gameBoard(playerPosY)(playerPosX) = 'S'
-      gameBoard(playerPosY)(playerPosX + 1) = '–'
+class MovePlayerRight(gameBoard: Array[Array[Char]], finalBoxLocations: List[(Int, Int)]) extends MovePlayer(gameBoard, finalBoxLocations) {
+  override val moveX: Int = 1
+  override val moveY: Int = 0
 }
 
-class MovePlayerUp(gameBoard: Array[Array[Char]]) extends MovePlayer(gameBoard) {
-  def move(): Unit =
-    println(gameBoard(playerPosY - 1)(playerPosX))
-    if (inBounds(playerPosY - 1, playerPosX) && gameBoard(playerPosY - 1)(playerPosX) == '–')
-      gameBoard(playerPosY)(playerPosX) = '–'
-      gameBoard(playerPosY - 1)(playerPosX) = 'S'
-      movedPlayer = true
-    else
-      movedPlayer = false
-
-  def undoMove() =
-    if (movedPlayer)
-      gameBoard(playerPosY)(playerPosX) = 'S'
-      gameBoard(playerPosY - 1)(playerPosX) = '–'
+class MovePlayerUp(gameBoard: Array[Array[Char]], finalBoxLocations: List[(Int, Int)]) extends MovePlayer(gameBoard, finalBoxLocations) {
+  override val moveX: Int = 0
+  override val moveY: Int = -1
 }
 
-class MovePlayerDown(gameBoard: Array[Array[Char]]) extends MovePlayer(gameBoard) {
-  def move(): Unit =
-    println(gameBoard(playerPosY + 1)(playerPosX))
-    if (inBounds(playerPosY + 1, playerPosX) && gameBoard(playerPosY + 1)(playerPosX) == '–')
-      gameBoard(playerPosY)(playerPosX) = '–'
-      gameBoard(playerPosY + 1)(playerPosX) = 'S'
-      movedPlayer = true
-    else
-      movedPlayer = false
-
-  def undoMove() =
-    if (movedPlayer)
-      gameBoard(playerPosY)(playerPosX) = 'S'
-      gameBoard(playerPosY + 1)(playerPosX) = '–'
+class MovePlayerDown(gameBoard: Array[Array[Char]], finalBoxLocations: List[(Int, Int)]) extends MovePlayer(gameBoard, finalBoxLocations) {
+  override val moveX: Int = 0
+  override val moveY: Int = 1
 }
 
 class MoveHistory {

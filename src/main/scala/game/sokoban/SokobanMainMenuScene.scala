@@ -9,22 +9,6 @@ import org.cosplay.prefabs.sprites.*
 import org.cosplay.CPPixel.*
 import org.cosplay.CPKeyboardKey.*
 
-/*
-   _________            ______________
-   __  ____/_______________  __ \__  /_____ _____  __
-   _  /    _  __ \_  ___/_  /_/ /_  /_  __ `/_  / / /
-   / /___  / /_/ /(__  )_  ____/_  / / /_/ /_  /_/ /
-   \____/  \____//____/ /_/     /_/  \__,_/ _\__, /
-                                            /____/
-
-          2D ASCII JVM GAME ENGINE FOR SCALA3
-              (C) 2021 Rowan Games, Inc.
-                All rights reserved.
-*/
-
-/**
-  * Snake game title scene.
-  */
 object SokobanMainMenuScene extends CPScene("title", None, BG_PX):
   private val introSnd = CPSound("sounds/games/snake/intro.wav", 0.5f)
   private val logoImg = CPImage.loadRexXp("images/games/snake/snake_logo.xp").trimBg()

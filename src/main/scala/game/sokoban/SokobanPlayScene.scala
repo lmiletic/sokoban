@@ -25,6 +25,8 @@ class SokobanPlayScene(dim : CPDim) extends CPScene("play", dim.?, BG_PX):
   private var gameBoard: Array[Array[Char]] = _
   private var gameBoardRows = 0
   private var gameBoardCols = 0
+  private var finalBoxLocations: List[(Int, Int)] = List()
+
   private val DARK_RED = CPColor("0x0903749")
   private val DARK_BLUE = CPColor("0x02B2E4A")
   private val DUSICA_ROSE = CPColor("0x0FFCFDF")
@@ -38,6 +40,7 @@ class SokobanPlayScene(dim : CPDim) extends CPScene("play", dim.?, BG_PX):
   private val finalBoxPositionPx = ' '&&(C_YELLOW, C_YELLOW)
   private val scorePx = ' '&&(DARK_BLUE, DARK_BLUE)
   private val boxPx = ' ' &&(SKY_BLUE, SKY_BLUE)
+  private val boxOnFinalPositionPx = ' '&&(C_RED, C_RED)
   private val playerPx = ' '&&(DUSICA_ROSE, DUSICA_ROSE)
 
   private val moveHistory = MoveHistory()
@@ -56,7 +59,8 @@ class SokobanPlayScene(dim : CPDim) extends CPScene("play", dim.?, BG_PX):
 
   private def movePlayer(command : MovePlayer) =
     command.move()
-    moveHistory.push(command)
+    if (command.isMoved())
+      moveHistory.push(command)
 
   private def undo() =
     var command = moveHistory.pop()
@@ -80,10 +84,10 @@ class SokobanPlayScene(dim : CPDim) extends CPScene("play", dim.?, BG_PX):
       ctx.getKbEvent match
         case Some(evt) =>
           evt.key match
-            case KEY_LO_W | KEY_UP => movePlayer(MovePlayerUp(gameBoard)); printGameBoard();
-            case KEY_LO_S | KEY_DOWN => movePlayer(MovePlayerDown(gameBoard)); printGameBoard();
-            case KEY_LO_A | KEY_LEFT => movePlayer(MovePlayerLeft(gameBoard)); printGameBoard();
-            case KEY_LO_D | KEY_RIGHT => movePlayer(MovePlayerRight(gameBoard)); printGameBoard();
+            case KEY_LO_W | KEY_UP => movePlayer(MovePlayerUp(gameBoard, finalBoxLocations)); printGameBoard();
+            case KEY_LO_S | KEY_DOWN => movePlayer(MovePlayerDown(gameBoard, finalBoxLocations)); printGameBoard();
+            case KEY_LO_A | KEY_LEFT => movePlayer(MovePlayerLeft(gameBoard, finalBoxLocations)); printGameBoard();
+            case KEY_LO_D | KEY_RIGHT => movePlayer(MovePlayerRight(gameBoard, finalBoxLocations)); printGameBoard();
             case KEY_CTRL_Z => undo()
             case _ => ()
         case None => ()
@@ -95,6 +99,7 @@ class SokobanPlayScene(dim : CPDim) extends CPScene("play", dim.?, BG_PX):
           case '.' => drawOneField((j + xOffset, i + yOffset), finalBoxPositionPx, ctx)
           case 'S' => drawOneField((j + xOffset,i + yOffset), playerPx, ctx)
           case 'x' => drawOneField((j + xOffset, i + yOffset), boxPx, ctx)
+          case 'O' => drawOneField((j + xOffset, i + yOffset), boxOnFinalPositionPx, ctx)
           case _ => ()
 
   private def loadLevel(): Unit =
@@ -104,6 +109,11 @@ class SokobanPlayScene(dim : CPDim) extends CPScene("play", dim.?, BG_PX):
       gameBoardRows = gameBoard.size
       gameBoardCols = gameBoard(0).size //handle empty file
       // calculate proper x,y offset
+      for (i <- 0 until gameBoardRows; j <- 0 until gameBoardCols)
+        gameBoard(i)(j) match
+          case 'O' | '.' =>
+            finalBoxLocations :+= (j, i)
+          case _ => ()
       printGameBoard()
     }
 

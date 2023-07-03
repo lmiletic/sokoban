@@ -14,6 +14,7 @@ import org.cosplay.prefabs.particles.*
 import org.cosplay.prefabs.sprites.{CPBubbleSprite, CPCenteredImageSprite}
 
 import Control._
+import java.io._
 
 class SokobanPlayScene(dim : CPDim) extends CPScene("play", dim.?, BG_PX):
 
@@ -22,6 +23,7 @@ class SokobanPlayScene(dim : CPDim) extends CPScene("play", dim.?, BG_PX):
   private val fadeOutShdr = CPFadeOutShader(entireFrame = true, 500, BG_PX)
 
   private var score = 0
+  private var gameOver = false
   private var gameBoard: Array[Array[Char]] = _
   private var gameBoardRows = 0
   private var gameBoardCols = 0
@@ -42,6 +44,35 @@ class SokobanPlayScene(dim : CPDim) extends CPScene("play", dim.?, BG_PX):
   private val boxPx = ' ' &&(SKY_BLUE, SKY_BLUE)
   private val boxOnFinalPositionPx = ' '&&(C_RED, C_RED)
   private val playerPx = ' '&&(DUSICA_ROSE, DUSICA_ROSE)
+
+  private def prepDialog(art: String): CPArrayImage =
+    new CPArrayImage(
+      prepSeq(art),
+      (ch, _, _) => ch match
+        case '*' => ' ' && (C2, C2)
+        case c if c.isLetter || c == '/' => c && (C4, BG_PX.bg.get)
+        case _ => ch && (C3, BG_PX.bg.get)
+    )
+
+  private val youWonImg = prepDialog(
+    """
+      |**********************************
+      |**                              **
+      |**    YOU WON :-)               **
+      |**    -----------               **
+      |**                              **
+      |**    [SPACE]   Main Menu       **
+      |**    [Q]       Quit            **
+      |**    [CTRL+A]  Audio On/OFF    **
+      |**    [CTRL+Q]  FPD Overlay     **
+      |**    [CTRL+L]  Log Console     **
+      |**                              **
+      |**********************************
+          """
+  )
+
+  private val wonShdr = CPSlideInShader.sigmoid(LEFT_TO_RIGHT, false, 1000, BG_PX)
+  private val youWonSpr = new CPCenteredImageSprite(img = youWonImg, z = 6, shaders = wonShdr.seq)
 
   private val moveHistory = MoveHistory()
   private def mkScoreImage: CPImage = FIG_ANSI_REGULAR.render(s"SCORE : $score", C3).trimBg()
@@ -80,29 +111,32 @@ class SokobanPlayScene(dim : CPDim) extends CPScene("play", dim.?, BG_PX):
   private val gameSpr = new CPCanvasSprite :
     override def update(ctx: CPSceneObjectContext): Unit =
       super.update(ctx)
-      var command : MovePlayer = null
-      ctx.getKbEvent match
-        case Some(evt) =>
-          evt.key match
-            case KEY_LO_W | KEY_UP =>
-              movePlayer(MovePlayerUp(gameBoard, finalBoxLocations))
-              printGameBoard()
-              checkWin()
-            case KEY_LO_S | KEY_DOWN =>
-              movePlayer(MovePlayerDown(gameBoard, finalBoxLocations))
-              printGameBoard()
-              checkWin()
-            case KEY_LO_A | KEY_LEFT =>
-              movePlayer(MovePlayerLeft(gameBoard, finalBoxLocations))
-              printGameBoard()
-              checkWin()
-            case KEY_LO_D | KEY_RIGHT =>
-              movePlayer(MovePlayerRight(gameBoard, finalBoxLocations))
-              printGameBoard()
-              checkWin()
-            case KEY_CTRL_Z => undo()
-            case _ => ()
-        case None => ()
+      if (!gameOver)
+        var command : MovePlayer = null
+        ctx.getKbEvent match
+          case Some(evt) =>
+            evt.key match
+              case KEY_LO_W | KEY_UP =>
+                movePlayer(MovePlayerUp(gameBoard, finalBoxLocations))
+                printGameBoard()
+                checkWin()
+              case KEY_LO_S | KEY_DOWN =>
+                movePlayer(MovePlayerDown(gameBoard, finalBoxLocations))
+                printGameBoard()
+                checkWin()
+              case KEY_LO_A | KEY_LEFT =>
+                movePlayer(MovePlayerLeft(gameBoard, finalBoxLocations))
+                printGameBoard()
+                checkWin()
+              case KEY_LO_D | KEY_RIGHT =>
+                movePlayer(MovePlayerRight(gameBoard, finalBoxLocations))
+                printGameBoard()
+                checkWin()
+              case KEY_CTRL_Z => undo()
+              case KEY_CTRL_S => saveLevel()
+              case KEY_CTRL_X => loadMoves()
+              case _ => ()
+          case None => ()
 
     override def render(ctx: CPSceneObjectContext): Unit =
       for (i <- 0 until gameBoardRows; j <- 0 until gameBoardCols)
@@ -110,12 +144,12 @@ class SokobanPlayScene(dim : CPDim) extends CPScene("play", dim.?, BG_PX):
           case '#' => drawOneField((j + xOffset, i + yOffset), borderPx, ctx)
           case '.' => drawOneField((j + xOffset, i + yOffset), finalBoxPositionPx, ctx)
           case 'S' => drawOneField((j + xOffset,i + yOffset), playerPx, ctx)
-          case 'x' => drawOneField((j + xOffset, i + yOffset), boxPx, ctx)
+          case 'X' => drawOneField((j + xOffset, i + yOffset), boxPx, ctx)
           case 'O' => drawOneField((j + xOffset, i + yOffset), boxOnFinalPositionPx, ctx)
           case _ => ()
 
   private def loadLevel(): Unit =
-    using(io.Source.fromFile("src/main/resources/lvl2.txt")){ source =>
+    using(io.Source.fromFile("src/main/resources/lvl1.txt")){ source =>
       val lines: List[String] = source.getLines().toList
       gameBoard = lines.map(_.toCharArray).toArray
       gameBoardRows = gameBoard.size
@@ -129,13 +163,53 @@ class SokobanPlayScene(dim : CPDim) extends CPScene("play", dim.?, BG_PX):
       printGameBoard()
     }
 
+  private def loadMoves(): Unit =
+    using(io.Source.fromFile("src/main/resources/moves.txt")) { source =>
+      val lines: List[String] = source.getLines().toList
+      for(command <- lines)
+        command match
+          case "U" =>
+            movePlayer(MovePlayerUp(gameBoard, finalBoxLocations))
+            printGameBoard()
+            checkWin()
+          case "D" =>
+            movePlayer(MovePlayerDown(gameBoard, finalBoxLocations))
+            printGameBoard()
+            checkWin()
+          case "L" =>
+            movePlayer(MovePlayerLeft(gameBoard, finalBoxLocations))
+            printGameBoard()
+            checkWin()
+          case "R" =>
+            movePlayer(MovePlayerRight(gameBoard, finalBoxLocations))
+            printGameBoard()
+            checkWin()
+          case _ => ()
+    }
+
+  private def saveLevel(): Unit =
+    val file = new File("src/main/resources/lvlSaved.txt")
+    val bw = new BufferedWriter(new FileWriter(file))
+    bw.write("Nesto")
+    bw.close()
+
+
   private def checkWin(): Unit =
     var win = true
     var winScore = 0
+
     for(i <- 0 until finalBoxLocations.size)
       if (gameBoard(finalBoxLocations(i)._2)(finalBoxLocations(i)._1) == 'O')
-        winScore = winScore + 1
+        winScore += 1
+        win = win && true
+      else
+        win = false
+
     score = winScore
+    scoreSpr.setImage(mkScoreImage)
+    gameOver = win
+    if (gameOver)
+      youWonSpr.show()
 
   private def printGameBoard() : Unit =
     for (i <- 0 until gameBoardRows)
@@ -144,18 +218,22 @@ class SokobanPlayScene(dim : CPDim) extends CPScene("play", dim.?, BG_PX):
       println()
     println()
 
-
   override def onActivate(): Unit =
     super.onActivate()
     loadLevel()
+    youWonSpr.hide()
 
 
   addObjects(
     new CPOffScreenSprite(Seq(fadeInShdr, fadeOutShdr)),
     // Handle 'Q' press globally for this scene.
     CPKeyboardSprite(KEY_LO_Q, _.exitGame()),
+    CPKeyboardSprite(KEY_SPACE, _ =>
+      fadeOutShdr.start(ctx => ctx.switchScene("menu", true))
+    ),
     scoreSpr,
     borderSpr,
-    gameSpr
+    gameSpr,
+    youWonSpr
   )
 end SokobanPlayScene

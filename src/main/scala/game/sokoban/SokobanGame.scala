@@ -21,7 +21,7 @@ object SokobanGame {
     // Start the game & wait for exit.
     try
       CPEngine.startGame(
-        CPFadeShimmerLogoScene("logo", None, BG_PX, CS, "title"),
+        CPFadeShimmerLogoScene("logo", None, BG_PX, CS, "menu"),
         SokobanMainMenuScene
       )
     finally CPEngine.dispose()

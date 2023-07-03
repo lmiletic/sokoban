@@ -31,7 +31,7 @@ abstract class MovePlayer(val gameBoard : Array[Array[Char]], val finalBoxLocati
       gameBoard(playerPosY + moveY)(playerPosX + moveX) match
         case '–' | '.' =>
           movePlayer()
-        case 'x' | 'O' =>
+        case 'X' | 'O' =>
           boxPosX = playerPosX + moveX
           boxPosY = playerPosY + moveY
           moveBox()
@@ -55,12 +55,12 @@ abstract class MovePlayer(val gameBoard : Array[Array[Char]], val finalBoxLocati
             gameBoard(boxPosY)(boxPosX) = '.'
           else
             gameBoard(boxPosY)(boxPosX) = '–'
-          gameBoard(boxPosY + moveY)(boxPosX + moveX) = if (finalBoxLocations.exists((x,y) => x == boxPosX + moveX && y == boxPosY + moveY)) 'O' else 'x'
+          gameBoard(boxPosY + moveY)(boxPosX + moveX) = if (finalBoxLocations.exists((x,y) => x == boxPosX + moveX && y == boxPosY + moveY)) 'O' else 'X'
           movedBox = true
         case _ => ()
 
   private def undoMoveBox(): Unit =
-    gameBoard(boxPosY)(boxPosX) = if (finalBoxLocations.exists((x,y) => x == boxPosX && y == boxPosY)) 'O' else 'x'
+    gameBoard(boxPosY)(boxPosX) = if (finalBoxLocations.exists((x,y) => x == boxPosX && y == boxPosY)) 'O' else 'X'
     gameBoard(boxPosY + moveY)(boxPosX + moveX) = if (finalBoxLocations.exists((x,y) => x == boxPosX + moveX && y == boxPosY + moveY)) '.' else '–'
 
   private def undoMovePlayer(): Unit =

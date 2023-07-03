@@ -9,7 +9,7 @@ import org.cosplay.prefabs.sprites.*
 import org.cosplay.CPPixel.*
 import org.cosplay.CPKeyboardKey.*
 
-object SokobanMainMenuScene extends CPScene("title", None, BG_PX):
+object SokobanMainMenuScene extends CPScene("menu", None, BG_PX):
   private val introSnd = CPSound("sounds/games/snake/intro.wav", 0.5f)
   private val logoImg = CPImage.loadRexXp("images/games/snake/snake_logo.xp").trimBg()
   private val fadeInShdr = CPSlideInShader.sigmoid(

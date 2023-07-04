@@ -24,6 +24,7 @@ class SokobanPlayScene(dim : CPDim) extends CPScene("play", dim.?, BG_PX):
 
   private var score = 0
   private var gameOver = false
+  private var saveMenu = false
   private var gameBoard: Array[Array[Char]] = _
   private var gameBoardRows = 0
   private var gameBoardCols = 0
@@ -71,8 +72,27 @@ class SokobanPlayScene(dim : CPDim) extends CPScene("play", dim.?, BG_PX):
           """
   )
 
-  private val wonShdr = CPSlideInShader.sigmoid(LEFT_TO_RIGHT, false, 1000, BG_PX)
-  private val youWonSpr = new CPCenteredImageSprite(img = youWonImg, z = 6, shaders = wonShdr.seq)
+  private val centralShdr = CPSlideInShader.sigmoid(LEFT_TO_RIGHT, false, 1000, BG_PX)
+  private val youWonSpr = new CPCenteredImageSprite(img = youWonImg, z = 6, shaders = centralShdr.seq)
+
+  private val saveMenuImg = prepDialog(
+    """
+      |**********************************
+      |**                              **
+      |**          SAVE GAME           **
+      |**         -----------          **
+      |**                              **
+      |**    [1]    Slot 1             **
+      |**    [2]    Slot 2             **
+      |**    [3]    Slot 3             **
+      |**    [4]    Slot 4             **
+      |**    [5]    Slot 5             **
+      |**                              **
+      |**********************************
+          """
+  )
+
+  private val saveSpr = new CPCenteredImageSprite(img = saveMenuImg, z = 6, shaders = centralShdr.seq)
 
   private val moveHistory = MoveHistory()
   private def mkScoreImage: CPImage = FIG_ANSI_REGULAR.render(s"SCORE : $score", C3).trimBg()
@@ -98,6 +118,50 @@ class SokobanPlayScene(dim : CPDim) extends CPScene("play", dim.?, BG_PX):
     if (command != null)
       command.undoMove()
 
+  private def movementCommands(ctx: CPSceneObjectContext) =
+    var command: MovePlayer = null
+    ctx.getKbEvent match
+      case Some(evt) =>
+        evt.key match
+          case KEY_LO_W | KEY_UP =>
+            movePlayer(MovePlayerUp(gameBoard, finalBoxLocations))
+            printGameBoard()
+            checkWin()
+          case KEY_LO_S | KEY_DOWN =>
+            movePlayer(MovePlayerDown(gameBoard, finalBoxLocations))
+            printGameBoard()
+            checkWin()
+          case KEY_LO_A | KEY_LEFT =>
+            movePlayer(MovePlayerLeft(gameBoard, finalBoxLocations))
+            printGameBoard()
+            checkWin()
+          case KEY_LO_D | KEY_RIGHT =>
+            movePlayer(MovePlayerRight(gameBoard, finalBoxLocations))
+            printGameBoard()
+            checkWin()
+          case KEY_CTRL_Z => undo()
+          case KEY_CTRL_S =>
+            saveMenu = true
+            saveSpr.show()
+          case KEY_CTRL_X => loadMoves()
+          case _ => ()
+      case None => ()
+
+  private def saveCommands(ctx: CPSceneObjectContext) =
+    ctx.getKbEvent match
+      case Some(evt) =>
+        evt.key match
+          case KEY_1 |
+               KEY_2 |
+               KEY_3 |
+               KEY_4 |
+               KEY_5 =>
+            println(evt.key)
+            saveLevel(evt.key)
+          case _ => ()
+      case None => ()
+
+
   private val borderSpr = new CPCanvasSprite :
     override def render(ctx: CPSceneObjectContext): Unit =
       val canv = ctx.getCanvas
@@ -111,32 +175,10 @@ class SokobanPlayScene(dim : CPDim) extends CPScene("play", dim.?, BG_PX):
   private val gameSpr = new CPCanvasSprite :
     override def update(ctx: CPSceneObjectContext): Unit =
       super.update(ctx)
-      if (!gameOver)
-        var command : MovePlayer = null
-        ctx.getKbEvent match
-          case Some(evt) =>
-            evt.key match
-              case KEY_LO_W | KEY_UP =>
-                movePlayer(MovePlayerUp(gameBoard, finalBoxLocations))
-                printGameBoard()
-                checkWin()
-              case KEY_LO_S | KEY_DOWN =>
-                movePlayer(MovePlayerDown(gameBoard, finalBoxLocations))
-                printGameBoard()
-                checkWin()
-              case KEY_LO_A | KEY_LEFT =>
-                movePlayer(MovePlayerLeft(gameBoard, finalBoxLocations))
-                printGameBoard()
-                checkWin()
-              case KEY_LO_D | KEY_RIGHT =>
-                movePlayer(MovePlayerRight(gameBoard, finalBoxLocations))
-                printGameBoard()
-                checkWin()
-              case KEY_CTRL_Z => undo()
-              case KEY_CTRL_S => saveLevel()
-              case KEY_CTRL_X => loadMoves()
-              case _ => ()
-          case None => ()
+      if (!gameOver && !saveMenu)
+        movementCommands(ctx)
+      if(saveMenu)
+        saveCommands(ctx)
 
     override def render(ctx: CPSceneObjectContext): Unit =
       for (i <- 0 until gameBoardRows; j <- 0 until gameBoardCols)
@@ -187,8 +229,8 @@ class SokobanPlayScene(dim : CPDim) extends CPScene("play", dim.?, BG_PX):
           case _ => ()
     }
 
-  private def saveLevel(): Unit =
-    val file = new File("src/main/resources/lvlSaved.txt")
+  private def saveLevel(slotNum : String): Unit =
+    val file = new File("src/main/resources/save/slot" + slotNum + ".txt")
     val bw = new BufferedWriter(new FileWriter(file))
     bw.write("Nesto")
     bw.close()
@@ -220,8 +262,9 @@ class SokobanPlayScene(dim : CPDim) extends CPScene("play", dim.?, BG_PX):
 
   override def onActivate(): Unit =
     super.onActivate()
-    loadLevel()
     youWonSpr.hide()
+    saveSpr.hide()
+    loadLevel()
 
 
   addObjects(
@@ -234,6 +277,7 @@ class SokobanPlayScene(dim : CPDim) extends CPScene("play", dim.?, BG_PX):
     scoreSpr,
     borderSpr,
     gameSpr,
-    youWonSpr
+    youWonSpr,
+    saveSpr
   )
 end SokobanPlayScene

@@ -92,6 +92,7 @@ class SokobanPlayScene(dim : CPDim) extends CPScene("play", dim.?, BG_PX):
           """
   )
 
+  private val saveKeyMap = Map(KEY_1 -> 1, KEY_2 -> 2, KEY_3 -> 3, KEY_4 -> 4, KEY_5 -> 5)
   private val saveSpr = new CPCenteredImageSprite(img = saveMenuImg, z = 6, shaders = centralShdr.seq)
 
   private val moveHistory = MoveHistory()
@@ -156,11 +157,11 @@ class SokobanPlayScene(dim : CPDim) extends CPScene("play", dim.?, BG_PX):
                KEY_3 |
                KEY_4 |
                KEY_5 =>
-            println(evt.key)
-            saveLevel(evt.key)
+            saveLevel(saveKeyMap(evt.key))
+            saveSpr.hide()
+            saveMenu = false
           case _ => ()
       case None => ()
-
 
   private val borderSpr = new CPCanvasSprite :
     override def render(ctx: CPSceneObjectContext): Unit =
@@ -191,7 +192,7 @@ class SokobanPlayScene(dim : CPDim) extends CPScene("play", dim.?, BG_PX):
           case _ => ()
 
   private def loadLevel(): Unit =
-    using(io.Source.fromFile("src/main/resources/lvl1.txt")){ source =>
+    using(io.Source.fromFile("src/main/resources/levels/lvl1.txt")){ source =>
       val lines: List[String] = source.getLines().toList
       gameBoard = lines.map(_.toCharArray).toArray
       gameBoardRows = gameBoard.size
@@ -229,12 +230,13 @@ class SokobanPlayScene(dim : CPDim) extends CPScene("play", dim.?, BG_PX):
           case _ => ()
     }
 
-  private def saveLevel(slotNum : String): Unit =
+  private def saveLevel(slotNum : Int): Unit =
     val file = new File("src/main/resources/save/slot" + slotNum + ".txt")
     val bw = new BufferedWriter(new FileWriter(file))
-    bw.write("Nesto")
+    for (i <- 0 until gameBoardRows)
+      gameBoard(i).toList.foreach(symbol => bw.write(symbol))
+      bw.write('\n')
     bw.close()
-
 
   private def checkWin(): Unit =
     var win = true
@@ -265,7 +267,6 @@ class SokobanPlayScene(dim : CPDim) extends CPScene("play", dim.?, BG_PX):
     youWonSpr.hide()
     saveSpr.hide()
     loadLevel()
-
 
   addObjects(
     new CPOffScreenSprite(Seq(fadeInShdr, fadeOutShdr)),

@@ -11,13 +11,15 @@ import org.cosplay.CPKeyboardKey.*
 
 object SokobanMainMenuScene extends CPScene("menu", None, BG_PX):
   private val introSnd = CPSound("sounds/games/snake/intro.wav", 0.5f)
-  private val logoImg = CPImage.loadRexXp("images/games/snake/snake_logo.xp").trimBg()
+  private val logoImg = CPImage.loadRexXp("src/main/resources/sokoban_logo.xp").trimBg()
   private val fadeInShdr = CPSlideInShader.sigmoid(
     CPSlideDirection.LEFT_TO_RIGHT,
     true,
     3000,
     BG_PX,
-    onFinish = _ => eyesShdr.start()
+    onFinish = _ =>
+      sqBracLeftShdr.start()
+      sqBracRightShdr.start()
   )
   private val starStreakShdr = CPStarStreakShader(
     true,
@@ -30,12 +32,13 @@ object SokobanMainMenuScene extends CPScene("menu", None, BG_PX):
     skip = (zpx, _, _) => zpx.z == 1
   )
   private val fadeOutShdr = CPFadeOutShader(true, 500, BG_PX)
-  private val eyesShdr = CPShimmerShader(false, CS, keyFrame = 7, false, (zpx, _, _) => zpx.px.char != '8')
+  private val sqBracLeftShdr = CPShimmerShader(false, CS, keyFrame = 7, false, (zpx, _, _) => zpx.px.char != '[')
+  private val sqBracRightShdr = CPShimmerShader(false, CS, keyFrame = 7, false, (zpx, _, _) => zpx.px.char != ']')
 
   // Add scene objects...
   addObjects(
     // Main logo.
-    CPCenteredImageSprite(img = logoImg, 1, shaders = Seq(eyesShdr)),
+    CPCenteredImageSprite(img = logoImg, 1, shaders = Seq(sqBracLeftShdr, sqBracRightShdr)),
     // Off screen sprite since shaders are applied to entire screen.
     new CPOffScreenSprite(shaders = Seq(fadeInShdr, starStreakShdr, fadeOutShdr)),
     // Exit on 'Q' press.
@@ -72,7 +75,8 @@ object SokobanMainMenuScene extends CPScene("menu", None, BG_PX):
   override def onDeactivate(): Unit =
     // Stop shaders.
     starStreakShdr.stop()
-    eyesShdr.stop()
+    sqBracLeftShdr.stop()
+    sqBracRightShdr.stop()
     stopBgAudio()
 
 end SokobanMainMenuScene

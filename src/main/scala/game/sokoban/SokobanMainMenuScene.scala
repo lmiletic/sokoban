@@ -5,9 +5,13 @@ import org.cosplay.*
 import org.cosplay.CPColor.*
 import org.cosplay.CPArrayImage.*
 import org.cosplay.prefabs.shaders.*
+import org.cosplay.prefabs.shaders.CPSlideDirection.*
 import org.cosplay.prefabs.sprites.*
 import org.cosplay.CPPixel.*
 import org.cosplay.CPKeyboardKey.*
+
+import java.nio.file.{FileSystems, Files}
+import scala.jdk.CollectionConverters._
 
 object SokobanMainMenuScene extends CPScene("menu", None, BG_PX):
   private val introSnd = CPSound("sounds/games/snake/intro.wav", 0.5f)
@@ -35,6 +39,35 @@ object SokobanMainMenuScene extends CPScene("menu", None, BG_PX):
   private val sqBracLeftShdr = CPShimmerShader(false, CS, keyFrame = 7, false, (zpx, _, _) => zpx.px.char != '[')
   private val sqBracRightShdr = CPShimmerShader(false, CS, keyFrame = 7, false, (zpx, _, _) => zpx.px.char != ']')
 
+  private def prepDialog(art: String): CPArrayImage =
+    new CPArrayImage(
+      prepSeq(art),
+      (ch, _, _) => ch match
+        case '*' => ' ' && (C2, C2)
+        case c if c.isLetter || c == '/' => c && (C4, BG_PX.bg.get)
+        case _ => ch && (C3, BG_PX.bg.get)
+    )
+
+  private var chooseLvlImg = prepDialog(
+    """
+      |**********************************
+      |**                              **
+      |**         CHOOSE LEVEL         **
+      |**        --------------        **
+      |**                              **
+      |**    [1]   Main Menu           **
+      |**    [2]       Quit            **
+      |**    [3]  Audio On/OFF         **
+      |**    [4]  FPD Overlay          **
+      |**    [5]  Log Console          **
+      |**                              **
+      |**********************************
+          """
+  )
+
+  private val centralShdr = CPSlideInShader.sigmoid(LEFT_TO_RIGHT, false, 1000, BG_PX)
+  private val chooseLvlShdr = new CPCenteredImageSprite(img = chooseLvlImg, z = 6, shaders = centralShdr.seq)
+
   // Add scene objects...
   addObjects(
     // Main logo.
@@ -49,7 +82,9 @@ object SokobanMainMenuScene extends CPScene("menu", None, BG_PX):
     CPKeyboardSprite(KEY_ENTER, ctx =>
       if !fadeOutShdr.isActive then
         fadeOutShdr.start(_.addScene(new SokobanPlayScene(ctx.getCanvas.dim), true))
-    )
+    ),
+    chooseLvlShdr,
+    CPKeyboardSprite(KEY_SPACE, _ => chooseLvlShdr.show())
   )
 
   private def startBgAudio(): Unit = introSnd.loop(2000)
@@ -70,13 +105,17 @@ object SokobanMainMenuScene extends CPScene("menu", None, BG_PX):
     // Reset the shaders.
     fadeInShdr.start()
     starStreakShdr.start()
+    chooseLvlShdr.hide()
     if audioOn then startBgAudio()
+    val dir = FileSystems.getDefault.getPath("src/main/resources/levels/")
+    Files.list(dir).iterator()..asScala.foreach(println)
 
   override def onDeactivate(): Unit =
     // Stop shaders.
     starStreakShdr.stop()
     sqBracLeftShdr.stop()
     sqBracRightShdr.stop()
+    chooseLvlShdr.hide()
     stopBgAudio()
 
 end SokobanMainMenuScene

@@ -16,7 +16,7 @@ import org.cosplay.prefabs.sprites.{CPBubbleSprite, CPCenteredImageSprite}
 import Control._
 import java.io._
 
-class SokobanPlayScene(dim : CPDim) extends CPScene("play", dim.?, BG_PX):
+class SokobanPlayScene(dim : CPDim, lvl : String) extends CPScene("play", dim.?, BG_PX):
 
   // Shaders.
   private val fadeInShdr = CPFadeInShader(entireFrame = true, 500, BG_PX)
@@ -59,10 +59,10 @@ class SokobanPlayScene(dim : CPDim) extends CPScene("play", dim.?, BG_PX):
     """
       |**********************************
       |**                              **
-      |**    YOU WON :-)               **
-      |**    -----------               **
+      |**          YOU WON :-)         **
+      |**          -----------         **
       |**                              **
-      |**    [SPACE]   Main Menu       **
+      |**    [ESC]     Main Menu       **
       |**    [Q]       Quit            **
       |**    [CTRL+A]  Audio On/OFF    **
       |**    [CTRL+Q]  FPD Overlay     **
@@ -192,7 +192,7 @@ class SokobanPlayScene(dim : CPDim) extends CPScene("play", dim.?, BG_PX):
           case _ => ()
 
   private def loadLevel(): Unit =
-    using(io.Source.fromFile("src/main/resources/levels/lvl1.txt")){ source =>
+    using(io.Source.fromFile(lvl)){ source =>
       val lines: List[String] = source.getLines().toList
       gameBoard = lines.map(_.toCharArray).toArray
       gameBoardRows = gameBoard.size
@@ -272,7 +272,7 @@ class SokobanPlayScene(dim : CPDim) extends CPScene("play", dim.?, BG_PX):
     new CPOffScreenSprite(Seq(fadeInShdr, fadeOutShdr)),
     // Handle 'Q' press globally for this scene.
     CPKeyboardSprite(KEY_LO_Q, _.exitGame()),
-    CPKeyboardSprite(KEY_SPACE, _ =>
+    CPKeyboardSprite(KEY_ESC, _ =>
       fadeOutShdr.start(ctx => ctx.switchScene("menu", true))
     ),
     scoreSpr,

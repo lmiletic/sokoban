@@ -11,7 +11,10 @@ import org.cosplay.CPPixel.*
 import org.cosplay.CPKeyboardKey.*
 
 import java.nio.file.{FileSystems, Files}
+import javax.swing.JFileChooser
 import scala.jdk.CollectionConverters._
+import scala.collection.mutable.ArrayBuffer
+import scala.util.Random
 
 object SokobanMainMenuScene extends CPScene("menu", None, BG_PX):
   private val introSnd = CPSound("sounds/games/snake/intro.wav", 0.5f)
@@ -48,25 +51,26 @@ object SokobanMainMenuScene extends CPScene("menu", None, BG_PX):
         case _ => ch && (C3, BG_PX.bg.get)
     )
 
-  private var chooseLvlImg = prepDialog(
+  private var chooseGameSaveImg = prepDialog(
     """
       |**********************************
       |**                              **
-      |**         CHOOSE LEVEL         **
+      |**        LOAD GAME SAVE        **
       |**        --------------        **
       |**                              **
-      |**    [1]   Main Menu           **
-      |**    [2]       Quit            **
-      |**    [3]  Audio On/OFF         **
-      |**    [4]  FPD Overlay          **
-      |**    [5]  Log Console          **
+      |**    [1]    Slot 1             **
+      |**    [2]    Slot 2             **
+      |**    [3]    Slot 3             **
+      |**    [4]    Slot 4             **
+      |**    [5]    Slot 5             **
+      |**    [ESC]    Back             **
       |**                              **
       |**********************************
           """
   )
 
   private val centralShdr = CPSlideInShader.sigmoid(LEFT_TO_RIGHT, false, 1000, BG_PX)
-  private val chooseLvlShdr = new CPCenteredImageSprite(img = chooseLvlImg, z = 6, shaders = centralShdr.seq)
+  private val chooseGameSaveShdr = new CPCenteredImageSprite(img = chooseGameSaveImg, z = 6, shaders = centralShdr.seq)
 
   // Add scene objects...
   addObjects(
@@ -81,10 +85,11 @@ object SokobanMainMenuScene extends CPScene("menu", None, BG_PX):
     // Transition to the next scene on 'Enter' press fixing the dimension.
     CPKeyboardSprite(KEY_ENTER, ctx =>
       if !fadeOutShdr.isActive then
-        fadeOutShdr.start(_.addScene(new SokobanPlayScene(ctx.getCanvas.dim), true))
+        fadeOutShdr.start(_.addScene(new SokobanPlayScene(ctx.getCanvas.dim, getRandomLevel()), true))
     ),
-    chooseLvlShdr,
-    CPKeyboardSprite(KEY_SPACE, _ => chooseLvlShdr.show())
+    chooseGameSaveShdr,
+    CPKeyboardSprite(KEY_CTRL_S, _ => chooseGameSaveShdr.show()),
+    CPKeyboardSprite(KEY_SPACE, _ => chooseLevel())
   )
 
   private def startBgAudio(): Unit = introSnd.loop(2000)
@@ -101,21 +106,32 @@ object SokobanMainMenuScene extends CPScene("menu", None, BG_PX):
       startBgAudio()
       audioOn = true
 
+  private def getRandomLevel() : String =
+    val dir = FileSystems.getDefault.getPath("src/main/resources/levels/")
+    val files = Files.list(dir).toArray()
+    files(Random.nextInt(files.size)).toString()
+
+  private def chooseLevel() : Unit =
+      val chooser: JFileChooser = JFileChooser()
+      chooser.setDialogTitle("Choose level")
+      chooser.setFileSelectionMode(JFileChooser.FILES_ONLY)
+      if (chooser.showOpenDialog(null) eq JFileChooser.APPROVE_OPTION)
+        if !fadeOutShdr.isActive then
+          fadeOutShdr.start(_.addScene(new SokobanPlayScene(null, getRandomLevel()), true))
+
   override def onActivate(): Unit =
     // Reset the shaders.
     fadeInShdr.start()
     starStreakShdr.start()
-    chooseLvlShdr.hide()
+    chooseGameSaveShdr.hide()
     if audioOn then startBgAudio()
-    val dir = FileSystems.getDefault.getPath("src/main/resources/levels/")
-    Files.list(dir).iterator()..asScala.foreach(println)
 
   override def onDeactivate(): Unit =
     // Stop shaders.
     starStreakShdr.stop()
     sqBracLeftShdr.stop()
     sqBracRightShdr.stop()
-    chooseLvlShdr.hide()
+    chooseGameSaveShdr.hide()
     stopBgAudio()
 
 end SokobanMainMenuScene

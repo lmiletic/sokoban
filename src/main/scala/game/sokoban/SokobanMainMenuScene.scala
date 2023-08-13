@@ -117,7 +117,7 @@ object SokobanMainMenuScene extends CPScene("menu", None, BG_PX):
       chooser.setFileSelectionMode(JFileChooser.FILES_ONLY)
       if (chooser.showOpenDialog(null) eq JFileChooser.APPROVE_OPTION)
         if !fadeOutShdr.isActive then
-          fadeOutShdr.start(_.addScene(new SokobanPlayScene(null, getRandomLevel()), true))
+          fadeOutShdr.start(_.addScene(new SokobanPlayScene(null, chooser.getSelectedFile().getPath()), true))
 
   override def onActivate(): Unit =
     // Reset the shaders.

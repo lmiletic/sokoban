@@ -12,8 +12,6 @@ import org.cosplay.CPKeyboardKey.*
 import org.cosplay.prefabs.particles.CPConfettiEmitter
 import org.cosplay.prefabs.particles.*
 import org.cosplay.prefabs.sprites.{CPBubbleSprite, CPCenteredImageSprite}
-
-import Control._
 import java.io._
 
 class SokobanPlayScene(dim : CPDim, lvl : String) extends CPScene("play", dim.?, BG_PX):
@@ -55,6 +53,7 @@ class SokobanPlayScene(dim : CPDim, lvl : String) extends CPScene("play", dim.?,
         case _ => ch && (C3, BG_PX.bg.get)
     )
 
+  private val centralShdr = CPSlideInShader.sigmoid(LEFT_TO_RIGHT, false, 1000, BG_PX)
   private val youWonImg = prepDialog(
     """
       |**********************************
@@ -72,7 +71,6 @@ class SokobanPlayScene(dim : CPDim, lvl : String) extends CPScene("play", dim.?,
           """
   )
 
-  private val centralShdr = CPSlideInShader.sigmoid(LEFT_TO_RIGHT, false, 1000, BG_PX)
   private val youWonSpr = new CPCenteredImageSprite(img = youWonImg, z = 6, shaders = centralShdr.seq)
 
   private val saveMenuImg = prepDialog(
@@ -94,6 +92,25 @@ class SokobanPlayScene(dim : CPDim, lvl : String) extends CPScene("play", dim.?,
 
   private val saveKeyMap = Map(KEY_1 -> 1, KEY_2 -> 2, KEY_3 -> 3, KEY_4 -> 4, KEY_5 -> 5)
   private val saveSpr = new CPCenteredImageSprite(img = saveMenuImg, z = 6, shaders = centralShdr.seq)
+
+  private val invalidLevelImg = prepDialog(
+    """
+      |**********************************
+      |**                              **
+      |**      WRONG LEVEL FORMAT      **
+      |**     --------------------     **
+      |**     Ensure that selected     **
+      |**     file has proper level    **
+      |**     format!                  **
+      |**                              **
+      |**   [ESC]  Back to Main Menu   **
+      |**                              **
+      |**                              **
+      |**********************************
+          """
+  )
+
+  private val invalidLevelSpr = new CPCenteredImageSprite(img = invalidLevelImg, z = 6, shaders = centralShdr.seq)
 
   private val moveHistory = MoveHistory()
   private def mkScoreImage: CPImage = FIG_ANSI_REGULAR.render(s"SCORE : $score", C3).trimBg()
@@ -191,25 +208,54 @@ class SokobanPlayScene(dim : CPDim, lvl : String) extends CPScene("play", dim.?,
           case 'O' => drawOneField((j + xOffset, i + yOffset), boxOnFinalPositionPx, ctx)
           case _ => ()
 
+  private def showInvalidLevel() : Unit =
+    gameOver = true
+    gameSpr.hide()
+    invalidLevelSpr.show()
+  private def checkForInvalidLevel() : Boolean =
+    var invalid = false
+    for (i <- 0 until gameBoardRows; j <- 0 until gameBoardCols)
+      gameBoard(i)(j) match
+        case 'S' | 'X' | 'O' | '.' | '#' | '–' => ()
+        case _ => invalid = true
+    invalid
+
+  private def findFinalLocations() : Unit =
+    for (i <- 0 until gameBoardRows; j <- 0 until gameBoardCols)
+      gameBoard(i)(j) match
+        case 'O' | '.' =>
+          finalBoxLocations :+= (j, i)
+        case _ => ()
+    printGameBoard()
+
   private def loadLevel(): Unit =
-    using(io.Source.fromFile(lvl)){ source =>
+    val source = io.Source.fromFile(lvl)
+    try {
       val lines: List[String] = source.getLines().toList
       gameBoard = lines.map(_.toCharArray).toArray
       gameBoardRows = gameBoard.size
-      gameBoardCols = gameBoard(0).size //handle empty file
-      // calculate proper x,y offset
-      for (i <- 0 until gameBoardRows; j <- 0 until gameBoardCols)
-        gameBoard(i)(j) match
-          case 'O' | '.' =>
-            finalBoxLocations :+= (j, i)
-          case _ => ()
-      printGameBoard()
+      gameBoardCols = gameBoard(0).size
+
+      // TODO: calculate proper x,y offset
+      if (checkForInvalidLevel())
+        showInvalidLevel()
+      else
+        // TODO: validate there is one player only, and number of boxes matches number of final locations
+        findFinalLocations()
+        checkWin()
+    }
+    catch {
+      case e : Exception => showInvalidLevel()
+    }
+    finally {
+      source.close()
     }
 
   private def loadMoves(): Unit =
-    using(io.Source.fromFile("src/main/resources/moves.txt")) { source =>
+    val source = io.Source.fromFile("src/main/resources/moves.txt")
+    try {
       val lines: List[String] = source.getLines().toList
-      for(command <- lines)
+      for (command <- lines)
         command match
           case "U" =>
             movePlayer(MovePlayerUp(gameBoard, finalBoxLocations))
@@ -228,6 +274,9 @@ class SokobanPlayScene(dim : CPDim, lvl : String) extends CPScene("play", dim.?,
             printGameBoard()
             checkWin()
           case _ => ()
+    }
+    finally {
+      source.close()
     }
 
   private def saveLevel(slotNum : Int): Unit =
@@ -266,6 +315,7 @@ class SokobanPlayScene(dim : CPDim, lvl : String) extends CPScene("play", dim.?,
     super.onActivate()
     youWonSpr.hide()
     saveSpr.hide()
+    invalidLevelSpr.hide()
     loadLevel()
 
   addObjects(
@@ -279,6 +329,7 @@ class SokobanPlayScene(dim : CPDim, lvl : String) extends CPScene("play", dim.?,
     borderSpr,
     gameSpr,
     youWonSpr,
-    saveSpr
+    saveSpr,
+    invalidLevelSpr
   )
 end SokobanPlayScene

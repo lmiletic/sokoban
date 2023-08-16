@@ -85,6 +85,7 @@ class SokobanPlayScene(dim : CPDim, lvl : String) extends CPScene("play", dim.?,
       |**    [3]    Slot 3             **
       |**    [4]    Slot 4             **
       |**    [5]    Slot 5             **
+      |**    [ESC]    Back             **
       |**                              **
       |**********************************
           """
@@ -323,7 +324,11 @@ class SokobanPlayScene(dim : CPDim, lvl : String) extends CPScene("play", dim.?,
     // Handle 'Q' press globally for this scene.
     CPKeyboardSprite(KEY_LO_Q, _.exitGame()),
     CPKeyboardSprite(KEY_ESC, _ =>
-      fadeOutShdr.start(ctx => ctx.switchScene("menu", true))
+      if (saveMenu)
+        saveSpr.hide()
+        saveMenu = false
+      else
+        fadeOutShdr.start(ctx => ctx.switchScene("menu", true))
     ),
     scoreSpr,
     borderSpr,

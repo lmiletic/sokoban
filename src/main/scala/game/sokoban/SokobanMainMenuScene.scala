@@ -69,8 +69,33 @@ object SokobanMainMenuScene extends CPScene("menu", None, BG_PX):
           """
   )
 
+  private val chooseGameSaveKeyMap = Map(KEY_1 -> 1, KEY_2 -> 2, KEY_3 -> 3, KEY_4 -> 4, KEY_5 -> 5)
+  private var chooseGameSave = false
+  private def chooseGameSaveCommands(ctx: CPSceneObjectContext) : Unit =
+    ctx.getKbEvent match
+      case Some(evt) =>
+        evt.key match
+          case KEY_1 |
+               KEY_2 |
+               KEY_3 |
+               KEY_4 |
+               KEY_5 =>
+            chooseGameSaveShdr.hide()
+            chooseGameSave = false
+            if !fadeOutShdr.isActive then
+              fadeOutShdr.start(_.addScene(new SokobanPlayScene(null,"src/main/resources/save/slot" + chooseGameSaveKeyMap(evt.key) + ".txt"), true))
+          case KEY_ESC =>
+            chooseGameSaveShdr.hide()
+            chooseGameSave = false
+          case _ => ()
+      case None => ()
+
   private val centralShdr = CPSlideInShader.sigmoid(LEFT_TO_RIGHT, false, 1000, BG_PX)
-  private val chooseGameSaveShdr = new CPCenteredImageSprite(img = chooseGameSaveImg, z = 6, shaders = centralShdr.seq)
+  private val chooseGameSaveShdr = new CPCenteredImageSprite(img = chooseGameSaveImg, z = 6, shaders = centralShdr.seq) :
+    override def update(ctx: CPSceneObjectContext): Unit =
+      super.update(ctx)
+      if (chooseGameSave)
+        chooseGameSaveCommands(ctx)
 
   // Add scene objects...
   addObjects(
@@ -88,7 +113,10 @@ object SokobanMainMenuScene extends CPScene("menu", None, BG_PX):
         fadeOutShdr.start(_.addScene(new SokobanPlayScene(ctx.getCanvas.dim, getRandomLevel()), true))
     ),
     chooseGameSaveShdr,
-    CPKeyboardSprite(KEY_CTRL_S, _ => chooseGameSaveShdr.show()),
+    CPKeyboardSprite(KEY_CTRL_S, _ =>
+      chooseGameSave = true
+      chooseGameSaveShdr.show()
+    ),
     CPKeyboardSprite(KEY_SPACE, _ => chooseLevel())
   )
 

@@ -20,7 +20,6 @@ class SokobanPlayScene(dim : CPDim, lvl : String) extends CPScene("play", dim.?,
   private val fadeInShdr = CPFadeInShader(entireFrame = true, 500, BG_PX)
   private val fadeOutShdr = CPFadeOutShader(entireFrame = true, 500, BG_PX)
 
-  private var score = 0
   private var gameOver = false
   private var saveMenu = false
   private var gameBoard: Array[Array[Char]] = _
@@ -39,7 +38,7 @@ class SokobanPlayScene(dim : CPDim, lvl : String) extends CPScene("play", dim.?,
 
   private val borderPx = ' '&&(DARK_RED, DARK_RED)
   private val finalBoxPositionPx = ' '&&(C_YELLOW, C_YELLOW)
-  private val scorePx = ' '&&(DARK_BLUE, DARK_BLUE)
+  private val legendPx = ' '&&(DARK_BLUE, DARK_BLUE)
   private val boxPx = ' ' &&(SKY_BLUE, SKY_BLUE)
   private val boxOnFinalPositionPx = ' '&&(C_RED, C_RED)
   private val playerPx = ' '&&(DUSICA_ROSE, DUSICA_ROSE)
@@ -54,6 +53,7 @@ class SokobanPlayScene(dim : CPDim, lvl : String) extends CPScene("play", dim.?,
     )
 
   private val centralShdr = CPSlideInShader.sigmoid(LEFT_TO_RIGHT, false, 1000, BG_PX)
+
   private val youWonImg = prepDialog(
     """
       |**********************************
@@ -114,13 +114,13 @@ class SokobanPlayScene(dim : CPDim, lvl : String) extends CPScene("play", dim.?,
   private val invalidLevelSpr = new CPCenteredImageSprite(img = invalidLevelImg, z = 6, shaders = centralShdr.seq)
 
   private val moveHistory = MoveHistory()
-  private def mkScoreImage: CPImage = FIG_ANSI_REGULAR.render(s"SCORE : $score", C3).trimBg()
+  private val legendImg = CPImage.loadRexXp("src/main/resources/legend.xp").trimBg()
 
-  private val scoreSpr = new CPImageSprite(x = 0, y = 0, z = 1, img = mkScoreImage) :
+  private val legendSpr = new CPImageSprite(x = 0, y = 0, z = 1, img = legendImg) :
     override def update(ctx: CPSceneObjectContext): Unit =
       val canv = ctx.getCanvas
       setX((canv.w - getImage.w) / 2)
-  private val scoreH = scoreSpr.getHeight
+  private val legendH = legendSpr.getHeight
 
   private def drawOneField(xy: (Int, Int), px: CPPixel, ctx: CPSceneObjectContext): Unit =
     val canv = ctx.getCanvas
@@ -185,11 +185,11 @@ class SokobanPlayScene(dim : CPDim, lvl : String) extends CPScene("play", dim.?,
     override def render(ctx: CPSceneObjectContext): Unit =
       val canv = ctx.getCanvas
       // Draw border
-      canv.drawRect(0, scoreH, CPDim(canv.w, canv.h - scoreH), 1, (_, _) => borderPx)
-      canv.drawLine(1, scoreH + 1, 1, canv.h, 1, borderPx)
-      canv.drawLine(canv.w - 2, scoreH + 1, canv.w - 2, canv.h, 1, borderPx)
-      // Draw score rectangle fill
-      canv.fillRect(0, 0, canv.w, scoreH - 1, 1, (_, _) => scorePx)
+      canv.drawRect(0, legendH, CPDim(canv.w, canv.h - legendH), 1, (_, _) => borderPx)
+      canv.drawLine(1, legendH + 1, 1, canv.h, 1, borderPx)
+      canv.drawLine(canv.w - 2, legendH + 1, canv.w - 2, canv.h, 1, borderPx)
+      // Draw legend rectangle fill
+      canv.fillRect(0, 0, canv.w, legendH - 1, 1, (_, _) => legendPx)
 
   private val gameSpr = new CPCanvasSprite :
     override def update(ctx: CPSceneObjectContext): Unit =
@@ -290,17 +290,13 @@ class SokobanPlayScene(dim : CPDim, lvl : String) extends CPScene("play", dim.?,
 
   private def checkWin(): Unit =
     var win = true
-    var winScore = 0
 
     for(i <- 0 until finalBoxLocations.size)
       if (gameBoard(finalBoxLocations(i)._2)(finalBoxLocations(i)._1) == 'O')
-        winScore += 1
         win = win && true
       else
         win = false
 
-    score = winScore
-    scoreSpr.setImage(mkScoreImage)
     gameOver = win
     if (gameOver)
       youWonSpr.show()
@@ -330,7 +326,7 @@ class SokobanPlayScene(dim : CPDim, lvl : String) extends CPScene("play", dim.?,
       else
         fadeOutShdr.start(ctx => ctx.switchScene("menu", true))
     ),
-    scoreSpr,
+    legendSpr,
     borderSpr,
     gameSpr,
     youWonSpr,

@@ -120,6 +120,7 @@ class SokobanPlayScene(dim : CPDim, lvl : String) extends CPScene("play", dim.?,
     override def update(ctx: CPSceneObjectContext): Unit =
       val canv = ctx.getCanvas
       setX((canv.w - getImage.w) / 2)
+
   private val legendH = legendSpr.getHeight
 
   private def drawOneField(xy: (Int, Int), px: CPPixel, ctx: CPSceneObjectContext): Unit =
@@ -133,12 +134,11 @@ class SokobanPlayScene(dim : CPDim, lvl : String) extends CPScene("play", dim.?,
       moveHistory.push(command)
 
   private def undo() =
-    var command = moveHistory.pop()
+    val command = moveHistory.pop()
     if (command != null)
       command.undoMove()
 
   private def movementCommands(ctx: CPSceneObjectContext) =
-    var command: MovePlayer = null
     ctx.getKbEvent match
       case Some(evt) =>
         evt.key match
@@ -181,6 +181,11 @@ class SokobanPlayScene(dim : CPDim, lvl : String) extends CPScene("play", dim.?,
           case _ => ()
       case None => ()
 
+  private def calcualateOffset(ctx: CPSceneObjectContext): Unit =
+    val canv = ctx.getCanvas
+    xOffset = ((canv.w /2) - gameBoardCols) / 2
+    yOffset = (canv.h + legendH - gameBoardRows) / 2
+
   private val borderSpr = new CPCanvasSprite :
     override def render(ctx: CPSceneObjectContext): Unit =
       val canv = ctx.getCanvas
@@ -200,6 +205,7 @@ class SokobanPlayScene(dim : CPDim, lvl : String) extends CPScene("play", dim.?,
         saveCommands(ctx)
 
     override def render(ctx: CPSceneObjectContext): Unit =
+      calcualateOffset(ctx)
       for (i <- 0 until gameBoardRows; j <- 0 until gameBoardCols)
         gameBoard(i)(j) match
           case '#' => drawOneField((j + xOffset, i + yOffset), borderPx, ctx)
@@ -237,7 +243,6 @@ class SokobanPlayScene(dim : CPDim, lvl : String) extends CPScene("play", dim.?,
       gameBoardRows = gameBoard.size
       gameBoardCols = gameBoard(0).size
 
-      // TODO: calculate proper x,y offset
       if (checkForInvalidLevel())
         showInvalidLevel()
       else

@@ -17,7 +17,7 @@ import scala.collection.mutable.ArrayBuffer
 import scala.util.Random
 
 object SokobanMainMenuScene extends CPScene("menu", None, BG_PX):
-  private val introSnd = CPSound("sounds/games/snake/intro.wav", 0.5f)
+  private val introSnd = CPSound("sounds/intro.wav", 0.5f)
   private val logoImg = CPImage.loadRexXp("src/main/resources/sokoban_logo.xp").trimBg()
   private val fadeInShdr = CPSlideInShader.sigmoid(
     CPSlideDirection.LEFT_TO_RIGHT,

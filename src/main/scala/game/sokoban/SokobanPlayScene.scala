@@ -24,6 +24,9 @@ class SokobanPlayScene(dim : CPDim, lvl : String) extends CPScene("play", dim.?,
   private val fadeInShdr = CPFadeInShader(entireFrame = true, 500, BG_PX)
   private val fadeOutShdr = CPFadeOutShader(entireFrame = true, 500, BG_PX)
 
+  private val failSound = CPSound("sounds/gameFail.wav", 0.5f)
+  private val winSound = CPSound("sounds/gameWin.wav", 0.5f)
+
   private var gameOver = false
   private var saveMenu = false
   private var blockCommandsOnMoveLoad = false
@@ -226,6 +229,7 @@ class SokobanPlayScene(dim : CPDim, lvl : String) extends CPScene("play", dim.?,
           case _ => ()
 
   private def showInvalidLevel() : Unit =
+    failSound.play()
     gameOver = true
     gameSpr.hide()
     invalidLevelSpr.show()
@@ -326,6 +330,7 @@ class SokobanPlayScene(dim : CPDim, lvl : String) extends CPScene("play", dim.?,
 
     gameOver = win
     if (gameOver)
+      winSound.play()
       youWonSpr.show()
 
   private def printGameBoard() : Unit =

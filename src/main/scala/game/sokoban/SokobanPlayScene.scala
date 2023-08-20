@@ -138,12 +138,12 @@ class SokobanPlayScene(dim : CPDim, lvl : String) extends CPScene("play", dim.?,
     if (command.isMoved())
       moveHistory.push(command)
 
-  private def undo() =
+  private def undo() : Unit =
     val command = moveHistory.pop()
     if (command != null)
       command.undoMove()
 
-  private def movementCommands(ctx: CPSceneObjectContext) =
+  private def movementCommands(ctx: CPSceneObjectContext) : Unit =
     ctx.getKbEvent match
       case Some(evt) =>
         evt.key match
@@ -171,7 +171,7 @@ class SokobanPlayScene(dim : CPDim, lvl : String) extends CPScene("play", dim.?,
           case _ => ()
       case None => ()
 
-  private def saveCommands(ctx: CPSceneObjectContext) =
+  private def saveCommands(ctx: CPSceneObjectContext) : Unit =
     ctx.getKbEvent match
       case Some(evt) =>
         evt.key match
@@ -186,7 +186,7 @@ class SokobanPlayScene(dim : CPDim, lvl : String) extends CPScene("play", dim.?,
           case _ => ()
       case None => ()
 
-  private def calcualateOffset(ctx: CPSceneObjectContext): Unit =
+  private def calculateOffset(ctx: CPSceneObjectContext): Unit =
     val canv = ctx.getCanvas
     xOffset = ((canv.w /2) - gameBoardCols) / 2
     yOffset = (canv.h + legendH - gameBoardRows) / 2
@@ -210,7 +210,7 @@ class SokobanPlayScene(dim : CPDim, lvl : String) extends CPScene("play", dim.?,
         saveCommands(ctx)
 
     override def render(ctx: CPSceneObjectContext): Unit =
-      calcualateOffset(ctx)
+      calculateOffset(ctx)
       for (i <- 0 until gameBoardRows; j <- 0 until gameBoardCols)
         gameBoard(i)(j) match
           case '#' => drawOneField((j + xOffset, i + yOffset), ctx, wallPx)
@@ -223,35 +223,46 @@ class SokobanPlayScene(dim : CPDim, lvl : String) extends CPScene("play", dim.?,
     gameOver = true
     gameSpr.hide()
     invalidLevelSpr.show()
+
   private def checkForInvalidLevel() : Boolean =
     var invalid = false
-    for (i <- 0 until gameBoardRows; j <- 0 until gameBoardCols)
-      gameBoard(i)(j) match
-        case 'S' | 'X' | 'O' | '.' | '#' | '–' => ()
-        case _ => invalid = true
-    invalid
+    var numberOfPlayers = 0
+    var numberOfBoxes = 0
+    var numberOfFinalPositions = 0
 
-  private def findFinalLocations() : Unit =
-    for (i <- 0 until gameBoardRows; j <- 0 until gameBoardCols)
-      gameBoard(i)(j) match
-        case 'O' | '.' =>
-          finalBoxLocations :+= (j, i)
-        case _ => ()
-    printGameBoard()
+    // Map is too big it can not fit on the screen, game limitation
+    if (gameBoardRows > 40 || gameBoardCols > 40)
+      invalid = true
+
+    if (!invalid)
+      for (i <- 0 until gameBoardRows; j <- 0 until gameBoardCols)
+        gameBoard(i)(j) match
+          case 'S' => numberOfPlayers += 1
+          case 'X' => numberOfBoxes += 1
+          case '.' =>
+            numberOfFinalPositions += 1
+            finalBoxLocations :+= (j, i)
+          case 'O' =>
+            numberOfBoxes += 1
+            numberOfFinalPositions += 1
+            finalBoxLocations :+= (j, i)
+          case '#' | '–' => ()
+          case _ => invalid = true
+      if (numberOfPlayers != 1 || numberOfBoxes == 0 || numberOfBoxes != numberOfFinalPositions)
+        invalid = true
+    invalid
 
   private def loadLevel(): Unit =
     val source = io.Source.fromFile(lvl)
     try {
       val lines: List[String] = source.getLines().toList
       gameBoard = lines.map(_.toCharArray).toArray
-      gameBoardRows = gameBoard.size
-      gameBoardCols = gameBoard(0).size
+      gameBoardRows = gameBoard.length
+      gameBoardCols = gameBoard(0).length
 
       if (checkForInvalidLevel())
         showInvalidLevel()
       else
-        // TODO: validate there is one player only, and number of boxes matches number of final locations
-        findFinalLocations()
         checkWin()
     }
     catch {
@@ -300,10 +311,8 @@ class SokobanPlayScene(dim : CPDim, lvl : String) extends CPScene("play", dim.?,
   private def checkWin(): Unit =
     var win = true
 
-    for(i <- 0 until finalBoxLocations.size)
-      if (gameBoard(finalBoxLocations(i)._2)(finalBoxLocations(i)._1) == 'O')
-        win = win && true
-      else
+    for(i <- finalBoxLocations.indices)
+      if (gameBoard(finalBoxLocations(i)._2)(finalBoxLocations(i)._1) != 'O')
         win = false
 
     gameOver = win

@@ -26,7 +26,6 @@ abstract class MovePlayer(val gameBoard : Array[Array[Char]], val finalBoxLocati
       playerPosY = i
 
   def move(): Unit =
-    println(gameBoard(playerPosY + moveY)(playerPosX + moveX))
     if (inBounds(playerPosY + moveY, playerPosX + moveX))
       gameBoard(playerPosY + moveY)(playerPosX + moveX) match
         case '–' | '.' =>

@@ -145,6 +145,8 @@ class SokobanPlayScene(dim : CPDim, lvl : String) extends CPScene("play", dim.?,
     command.move()
     if (command.isMoved())
       moveHistory.push(command)
+      checkWin()
+      printGameBoard()
 
   private def undo() : Unit =
     val command = moveHistory.pop()
@@ -157,20 +159,12 @@ class SokobanPlayScene(dim : CPDim, lvl : String) extends CPScene("play", dim.?,
         evt.key match
           case KEY_LO_W | KEY_UP =>
             movePlayer(MovePlayerUp(gameBoard, finalBoxLocations))
-            printGameBoard()
-            checkWin()
           case KEY_LO_S | KEY_DOWN =>
             movePlayer(MovePlayerDown(gameBoard, finalBoxLocations))
-            printGameBoard()
-            checkWin()
           case KEY_LO_A | KEY_LEFT =>
             movePlayer(MovePlayerLeft(gameBoard, finalBoxLocations))
-            printGameBoard()
-            checkWin()
           case KEY_LO_D | KEY_RIGHT =>
             movePlayer(MovePlayerRight(gameBoard, finalBoxLocations))
-            printGameBoard()
-            checkWin()
           case KEY_CTRL_Z => undo()
           case KEY_CTRL_S =>
             saveMenu = true
@@ -291,20 +285,12 @@ class SokobanPlayScene(dim : CPDim, lvl : String) extends CPScene("play", dim.?,
         command match
           case "U" =>
             movePlayer(MovePlayerUp(gameBoard, finalBoxLocations))
-            printGameBoard()
-            checkWin()
           case "D" =>
             movePlayer(MovePlayerDown(gameBoard, finalBoxLocations))
-            printGameBoard()
-            checkWin()
           case "L" =>
             movePlayer(MovePlayerLeft(gameBoard, finalBoxLocations))
-            printGameBoard()
-            checkWin()
           case "R" =>
             movePlayer(MovePlayerRight(gameBoard, finalBoxLocations))
-            printGameBoard()
-            checkWin()
           case _ => ()
         Thread.sleep(200)
     }

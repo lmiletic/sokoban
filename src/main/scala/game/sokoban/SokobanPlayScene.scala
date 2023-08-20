@@ -14,6 +14,10 @@ import org.cosplay.prefabs.particles.*
 import org.cosplay.prefabs.sprites.{CPBubbleSprite, CPCenteredImageSprite}
 import java.io._
 
+import scala.concurrent.Future
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.util.{Failure, Success}
+
 class SokobanPlayScene(dim : CPDim, lvl : String) extends CPScene("play", dim.?, BG_PX):
 
   // Shaders.
@@ -22,6 +26,7 @@ class SokobanPlayScene(dim : CPDim, lvl : String) extends CPScene("play", dim.?,
 
   private var gameOver = false
   private var saveMenu = false
+  private var blockCommandsOnMoveLoad = false
 
   private var gameBoard: Array[Array[Char]] = _
   private var gameBoardRows = 0
@@ -167,7 +172,7 @@ class SokobanPlayScene(dim : CPDim, lvl : String) extends CPScene("play", dim.?,
           case KEY_CTRL_S =>
             saveMenu = true
             saveSpr.show()
-          case KEY_CTRL_X => loadMoves()
+          case KEY_CTRL_X => Future(loadMoves())
           case _ => ()
       case None => ()
 
@@ -204,10 +209,11 @@ class SokobanPlayScene(dim : CPDim, lvl : String) extends CPScene("play", dim.?,
   private val gameSpr = new CPCanvasSprite :
     override def update(ctx: CPSceneObjectContext): Unit =
       super.update(ctx)
-      if (!gameOver && !saveMenu)
-        movementCommands(ctx)
-      if(saveMenu)
-        saveCommands(ctx)
+      if (!blockCommandsOnMoveLoad)
+        if (!gameOver && !saveMenu)
+          movementCommands(ctx)
+        if(saveMenu)
+          saveCommands(ctx)
 
     override def render(ctx: CPSceneObjectContext): Unit =
       calculateOffset(ctx)
@@ -273,6 +279,7 @@ class SokobanPlayScene(dim : CPDim, lvl : String) extends CPScene("play", dim.?,
     }
 
   private def loadMoves(): Unit =
+    blockCommandsOnMoveLoad = true
     val source = io.Source.fromFile("src/main/resources/moves.txt")
     try {
       val lines: List[String] = source.getLines().toList
@@ -295,8 +302,10 @@ class SokobanPlayScene(dim : CPDim, lvl : String) extends CPScene("play", dim.?,
             printGameBoard()
             checkWin()
           case _ => ()
+        Thread.sleep(200)
     }
     finally {
+      blockCommandsOnMoveLoad = false
       source.close()
     }
 

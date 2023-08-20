@@ -22,26 +22,28 @@ class SokobanPlayScene(dim : CPDim, lvl : String) extends CPScene("play", dim.?,
 
   private var gameOver = false
   private var saveMenu = false
+
   private var gameBoard: Array[Array[Char]] = _
   private var gameBoardRows = 0
   private var gameBoardCols = 0
   private var finalBoxLocations: List[(Int, Int)] = List()
 
-  private val DARK_RED = CPColor("0x0903749")
-  private val DARK_BLUE = CPColor("0x02B2E4A")
-  private val DUSICA_ROSE = CPColor("0x0FFCFDF")
-  private val SKY_BLUE = CPColor("0x05A96E3")
-
-  // should be calculated
   private var xOffset = 15
   private var yOffset = 15
 
-  private val borderPx = ' '&&(DARK_RED, DARK_RED)
-  private val finalBoxPositionPx = ' '&&(C_YELLOW, C_YELLOW)
-  private val legendPx = ' '&&(DARK_BLUE, DARK_BLUE)
-  private val boxPx = ' ' &&(SKY_BLUE, SKY_BLUE)
-  private val boxOnFinalPositionPx = ' '&&(C_RED, C_RED)
-  private val playerPx = ' '&&(DUSICA_ROSE, DUSICA_ROSE)
+  private final val DARK_RED = CPColor("0x0903749")
+  private final val DARK_BLUE = CPColor("0x02B2E4A")
+  private final val LIGHT_BLUE = CPColor("0x0337CCF")
+  private final val BROWN = CPColor("0x0873600")
+
+  private final val legendPx = ' '&&(DARK_BLUE, DARK_BLUE)
+  private final val borderPx = ' '&&(DARK_RED, DARK_RED)
+  private final val wallPx = (' '&&(C_BLACK, C_GRAY6))
+  private final val boxPxLeft = (' ' &&(BROWN, BROWN)).withFg(C_BLACK).withChar('>')
+  private final val boxPxRight = (' ' &&(BROWN, BROWN)).withFg(C_BLACK).withChar('<')
+  private final val finalBoxPositionPx = ' '&&(C_YELLOW, C_YELLOW)
+  private final val playerPxLeft = (' '&&(LIGHT_BLUE, LIGHT_BLUE)).withFg(C_YELLOW).withChar(':')
+  private final val playerPxRight = (' '&&(LIGHT_BLUE, LIGHT_BLUE)).withFg(C_YELLOW).withChar('D')
 
   private def prepDialog(art: String): CPArrayImage =
     new CPArrayImage(
@@ -123,10 +125,13 @@ class SokobanPlayScene(dim : CPDim, lvl : String) extends CPScene("play", dim.?,
 
   private val legendH = legendSpr.getHeight
 
-  private def drawOneField(xy: (Int, Int), px: CPPixel, ctx: CPSceneObjectContext): Unit =
+  private def drawOneField(xy: (Int, Int), ctx: CPSceneObjectContext, pxLeft: CPPixel, pxRight: CPPixel = null): Unit =
     val canv = ctx.getCanvas
-    canv.drawPixel(px, xy._1 * 2, xy._2, 2)
-    canv.drawPixel(px, xy._1 * 2 + 1, xy._2, 2)
+    val pxL = pxLeft
+    val pxR = if (pxRight == null) pxLeft else pxRight
+
+    canv.drawPixel(pxL, xy._1 * 2, xy._2, 2)
+    canv.drawPixel(pxR, xy._1 * 2 + 1, xy._2, 2)
 
   private def movePlayer(command : MovePlayer) =
     command.move()
@@ -208,11 +213,10 @@ class SokobanPlayScene(dim : CPDim, lvl : String) extends CPScene("play", dim.?,
       calcualateOffset(ctx)
       for (i <- 0 until gameBoardRows; j <- 0 until gameBoardCols)
         gameBoard(i)(j) match
-          case '#' => drawOneField((j + xOffset, i + yOffset), borderPx, ctx)
-          case '.' => drawOneField((j + xOffset, i + yOffset), finalBoxPositionPx, ctx)
-          case 'S' => drawOneField((j + xOffset,i + yOffset), playerPx, ctx)
-          case 'X' => drawOneField((j + xOffset, i + yOffset), boxPx, ctx)
-          case 'O' => drawOneField((j + xOffset, i + yOffset), boxOnFinalPositionPx, ctx)
+          case '#' => drawOneField((j + xOffset, i + yOffset), ctx, wallPx)
+          case '.' => drawOneField((j + xOffset, i + yOffset), ctx, finalBoxPositionPx)
+          case 'S' => drawOneField((j + xOffset, i + yOffset), ctx, playerPxLeft, playerPxRight)
+          case 'X' | 'O' => drawOneField((j + xOffset, i + yOffset), ctx, boxPxLeft, boxPxRight)
           case _ => ()
 
   private def showInvalidLevel() : Unit =

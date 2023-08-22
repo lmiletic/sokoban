@@ -8,6 +8,7 @@ import scala.collection.mutable.Queue
 class SokobanSolver(gameBoard : Array[Array[Char]], finalBoxLocations : List[(Int, Int)]) {
 
   private val moveHistory = MoveHistory()
+  private var triedPositions = List[String]()
   private def checkWin(): Boolean =
     var win = true
     for (i <- finalBoxLocations.indices)
@@ -26,6 +27,17 @@ class SokobanSolver(gameBoard : Array[Array[Char]], finalBoxLocations : List[(In
     case 2 => MovePlayerLeft(gameBoard, finalBoxLocations)
     case 3 => MovePlayerRight(gameBoard, finalBoxLocations)
   }
+
+  private def generatePositionId() : String =
+    var boxes = ""
+    var positionId = ""
+    for ((row, x) <- gameBoard.zipWithIndex)
+      for ((cell, y) <- row.zipWithIndex)
+        cell match
+          case 'X' | 'O' => boxes = boxes + "{" + x + "," + y + "}"
+          case 'S' => positionId = "{" + x + "," + y + "}"
+          case _ => ()
+    positionId + boxes
   private def solve(command : MovePlayer, maxDepth : Int) : Boolean =
     if (maxDepth == 0)
       return false
@@ -35,6 +47,12 @@ class SokobanSolver(gameBoard : Array[Array[Char]], finalBoxLocations : List[(In
     if (checkWin())
       return true
 
+    val positionId = generatePositionId()
+    if (triedPositions.contains(positionId))
+      moveHistory.pop().undoMove()
+      return false
+
+    triedPositions = positionId :: triedPositions
     var solved = false
     for(i <- 0 to 3)
       solved = solve(generateCommand(i), maxDepth - 1)
@@ -47,8 +65,7 @@ class SokobanSolver(gameBoard : Array[Array[Char]], finalBoxLocations : List[(In
   def solve(): MoveHistory =
     var solved = false
     for (i <- 0 to 3)
-      println(i)
-      solved = solve(generateCommand(i), 100)
+      solved = solve(generateCommand(i), 123)
       if (solved)
         return moveHistory
     null

@@ -19,6 +19,8 @@ abstract class MovePlayer(val gameBoard : Array[Array[Char]], val finalBoxLocati
   protected val moveX : Int
   protected val moveY : Int
 
+  val textRepresentation : Char
+
   // locating player
   for (i <- 0 until gameBoardRows; j <- 0 until gameBoardCols)
     if (gameBoard(i)(j) == 'S')
@@ -78,26 +80,31 @@ abstract class MovePlayer(val gameBoard : Array[Array[Char]], val finalBoxLocati
       true
     else
       false
+
 }
 
 class MovePlayerLeft(gameBoard: Array[Array[Char]], finalBoxLocations: List[(Int, Int)]) extends MovePlayer(gameBoard, finalBoxLocations) {
   override val moveX : Int = -1
   override val moveY : Int = 0
+  override val textRepresentation : Char = 'L'
 }
 
 class MovePlayerRight(gameBoard: Array[Array[Char]], finalBoxLocations: List[(Int, Int)]) extends MovePlayer(gameBoard, finalBoxLocations) {
   override val moveX: Int = 1
   override val moveY: Int = 0
+  override val textRepresentation : Char = 'R'
 }
 
 class MovePlayerUp(gameBoard: Array[Array[Char]], finalBoxLocations: List[(Int, Int)]) extends MovePlayer(gameBoard, finalBoxLocations) {
   override val moveX: Int = 0
   override val moveY: Int = -1
+  override val textRepresentation : Char = 'U'
 }
 
 class MovePlayerDown(gameBoard: Array[Array[Char]], finalBoxLocations: List[(Int, Int)]) extends MovePlayer(gameBoard, finalBoxLocations) {
   override val moveX: Int = 0
   override val moveY: Int = 1
+  override val textRepresentation : Char = 'D'
 }
 
 class MoveHistory {

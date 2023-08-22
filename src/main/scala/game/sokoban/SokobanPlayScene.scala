@@ -170,6 +170,7 @@ class SokobanPlayScene(dim : CPDim, lvl : String) extends CPScene("play", dim.?,
             saveMenu = true
             saveSpr.show()
           case KEY_CTRL_X => Future(loadMoves())
+          case KEY_CTRL_R => solve()
           case _ => ()
       case None => ()
 
@@ -298,6 +299,19 @@ class SokobanPlayScene(dim : CPDim, lvl : String) extends CPScene("play", dim.?,
       blockCommandsOnMoveLoad = false
       source.close()
     }
+
+  private def solve(): Unit =
+    println("Solver has started...")
+    val moveHistorySolved = SokobanSolver(gameBoard, finalBoxLocations).solve()
+    if (moveHistorySolved == null)
+      println("Solver has failed")
+    else
+      var command = moveHistorySolved.pop()
+      var moves = List[Char]()
+      while(command != null)
+        moves = command.textRepresentation :: moves
+        command = moveHistorySolved.pop()
+      moves.foreach(println)
 
   private def saveLevel(slotNum : Int): Unit =
     val file = new File("src/main/resources/save/slot" + slotNum + ".txt")

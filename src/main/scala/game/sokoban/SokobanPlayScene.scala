@@ -43,12 +43,15 @@ class SokobanPlayScene(dim : CPDim, lvl : String) extends CPScene("play", dim.?,
   private final val DARK_BLUE = CPColor("0x02B2E4A")
   private final val LIGHT_BLUE = CPColor("0x0337CCF")
   private final val BROWN = CPColor("0x0873600")
+  private final val DARK_BROWN = CPColor("0x0643843")
 
   private final val legendPx = ' '&&(DARK_BLUE, DARK_BLUE)
   private final val borderPx = ' '&&(DARK_RED, DARK_RED)
   private final val wallPx = (' '&&(C_BLACK, C_GRAY6))
   private final val boxPxLeft = (' ' &&(BROWN, BROWN)).withFg(C_BLACK).withChar('>')
   private final val boxPxRight = (' ' &&(BROWN, BROWN)).withFg(C_BLACK).withChar('<')
+  private final val boxDarkPxLeft = (' ' && (DARK_BROWN, DARK_BROWN)).withFg(C_BLACK).withChar('>')
+  private final val boxDarkPxRight = (' ' && (DARK_BROWN, DARK_BROWN)).withFg(C_BLACK).withChar('<')
   private final val finalBoxPositionPx = ' '&&(C_YELLOW, C_YELLOW)
   private final val playerPxLeft = (' '&&(LIGHT_BLUE, LIGHT_BLUE)).withFg(C_YELLOW).withChar(':')
   private final val playerPxRight = (' '&&(LIGHT_BLUE, LIGHT_BLUE)).withFg(C_YELLOW).withChar('D')
@@ -220,7 +223,8 @@ class SokobanPlayScene(dim : CPDim, lvl : String) extends CPScene("play", dim.?,
           case '#' => drawOneField((j + xOffset, i + yOffset), ctx, wallPx)
           case '.' => drawOneField((j + xOffset, i + yOffset), ctx, finalBoxPositionPx)
           case 'S' => drawOneField((j + xOffset, i + yOffset), ctx, playerPxLeft, playerPxRight)
-          case 'X' | 'O' => drawOneField((j + xOffset, i + yOffset), ctx, boxPxLeft, boxPxRight)
+          case 'X' => drawOneField((j + xOffset, i + yOffset), ctx, boxPxLeft, boxPxRight)
+          case 'O' => drawOneField((j + xOffset, i + yOffset), ctx, boxDarkPxLeft, boxDarkPxRight)
           case _ => ()
 
   private def showInvalidLevel() : Unit =

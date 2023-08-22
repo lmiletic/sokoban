@@ -170,7 +170,7 @@ class SokobanPlayScene(dim : CPDim, lvl : String) extends CPScene("play", dim.?,
             saveMenu = true
             saveSpr.show()
           case KEY_CTRL_X => Future(loadMoves())
-          case KEY_CTRL_R => solve()
+          case KEY_CTRL_R => Future(solve())
           case _ => ()
       case None => ()
 
@@ -303,6 +303,7 @@ class SokobanPlayScene(dim : CPDim, lvl : String) extends CPScene("play", dim.?,
   private def solve(): Unit =
     println("Solver has started...")
     val moveHistorySolved = SokobanSolver(gameBoard, finalBoxLocations).solve()
+    moveHistory.clearHistory()
     if (moveHistorySolved == null)
       println("Solver has failed")
     else

@@ -109,6 +109,11 @@ class MovePlayerDown(gameBoard: Array[Array[Char]], finalBoxLocations: List[(Int
 
 class MoveHistory {
   private var history = Stack[MovePlayer]()
+
+  def clearHistory() =
+    while (history.size != 0)
+      history.pop()
+
   def push(command: MovePlayer) =
     history.push(command)
 
